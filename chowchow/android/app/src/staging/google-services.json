@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "project_number": "885919320892",
+    "firebase_url": "https://mediastore-stage.firebaseio.com",
+    "project_id": "mediastore-stage",
+    "storage_bucket": "mediastore-stage.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885919320892:android:b74ceff7d6cbf405",
+        "android_client_info": {
+          "package_name": "com.mediapeers.mediastore.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaHtACOGzMnRpVBgCAi2XD5_LkRr1xZlo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "885919320892-798jhqt8aof0m4qjl2v56rbcm6dqlaok.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "885919320892-5nqkm069kt0a97t4t2oep5l19r4jrke9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mediapeers.mediastore.dev"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:885919320892:android:a717caaee5ab7061",
+        "android_client_info": {
+          "package_name": "com.mediapeers.mediastore.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaHtACOGzMnRpVBgCAi2XD5_LkRr1xZlo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "885919320892-798jhqt8aof0m4qjl2v56rbcm6dqlaok.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "885919320892-5nqkm069kt0a97t4t2oep5l19r4jrke9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.mediapeers.mediastore.dev"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

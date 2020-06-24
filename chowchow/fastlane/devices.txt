@@ -1,0 +1,9 @@
+Device ID	Device Name
+538ad3837548a54bd43d3bf283fe475ee527ed94	brendonblackwell@me.com iPhone SE
+0419dc6f003e3d3400db1330d19e6232a6976eab	brendonblackwell@me.com iPad 4
+a39d092312c6d070c794d9443e699cf6d3c471a1	brendonblackwell@me.com iPhone 6 Plus
+d0ca014540d3e46158bd9072ff0cf380204de745	brendonblackwell@me.com iPhone 6 White
+e7cd1e6d36548972cff9bfe1cf488c8a11ee98c2	brendonblackwell@me.com iPhone 6s white
+687ad8efb54b77ce65f084a953f9c4bb4f831eb0	brendonblackwell@me.com iPhone 8
+c3ec8e0209e512f0d406dd11f196eb70a104b363	info@mediapeers.com iPad 5 Grey
+c0a8277a962b0b460f18d075f802bee0e2dd07a2	torsten.oettel@gmail.com iPhone 8

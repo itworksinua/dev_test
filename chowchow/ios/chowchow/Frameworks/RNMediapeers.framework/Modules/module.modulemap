@@ -1,0 +1,11 @@
+framework module RNMediapeers {
+  umbrella header "RNMediapeers.h"
+
+  export *
+  module * { export * }
+}
+
+module RNMediapeers.Swift {
+    header "RNMediapeers-Swift.h"
+    requires objc
+}

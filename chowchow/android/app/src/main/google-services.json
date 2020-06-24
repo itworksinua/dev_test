@@ -1,0 +1,35 @@
+{
+  "project_info": {
+    "project_number": "633121961097",
+    "firebase_url": "https://mediastore-production.firebaseio.com",
+    "project_id": "mediastore-production",
+    "storage_bucket": "mediastore-production.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633121961097:android:cd82c6ed3cb17b88",
+        "android_client_info": {
+          "package_name": "com.mediapeers.mediastore"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_D3DIXt-dB3XEfjbpF3b6MwGpiTvzse0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "633121961097-gnad6a9did783pd6p4lbpfl331978v3k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

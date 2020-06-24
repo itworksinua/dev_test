@@ -1,0 +1,298 @@
+#!/bin/bash
+
+# Optional: add an alias
+#
+# alias task=./taskfile
+
+PATH=./node_modules/.bin:$PATH
+APP_NAME=chowchow
+. ./.taskrc
+
+function public:fun {
+    echo $1
+}
+
+# Starts the server and connects an android device
+function public:start {
+
+    # if ANDROID_DEVICE is set to a device id in .taskrc
+    if [ -n "${ANDROID_DEVICE+set}" ]; then
+        echo 'Connecting to android device: '$ANDROID_DEVICE
+        adb -s $ANDROID_DEVICE reverse tcp:8081 tcp:8081
+        # adb -s FA86N1800845 reverse tcp:8081 tcp:8081  Johannes
+        # adb -s 026845bc6657bb50 reverse tcp:8081 tcp:8081
+    fi
+
+    # if LAUNCH_DEBUGGER is set to anything in .taskrc
+    if [ -n "${LAUNCH_DEBUGGER+set}" ] && [ $LAUNCH_DEBUGGER == "true" ]; then
+        echo "launching debugger"
+        open http://localhost:8081/debugger-ui/
+    fi
+
+    node node_modules/react-native/local-cli/cli.js start $1
+}
+
+function public:build_bundle {
+  react-native bundle --entry-file index.ts --platform ios --dev false --bundle-output ios/chowchow/main.jsbundle --assets-dest ios
+}
+
+function public:build_ios_framework {
+  # for release builds we need the react-native-mediapeers dependency to be build for 'Release' first
+  # then copy the results into this repo
+  xcodebuild -project ../react-native-mediapeers/ios/RNMediapeers.xcodeproj -scheme RNMediapeers -sdk iphoneos -configuration Release -derivedDataPath framework-builds clean build
+  rm -rf ios/chowchow/Frameworks/RNMediapeers.framework
+  cp -R framework-builds/Build/Products/Release-iphoneos/RNMediapeers.framework ios/chowchow/Frameworks
+}
+
+function public:get_android_device {
+    adb devices | grep -o '\b[a-f0-9]\{10,\}\b'
+}
+
+function public:get_android_devices {
+    adb devices
+}
+
+function public:get_ios_device {
+    instruments -s devices | grep -v "(Simulator)" | grep "(null)" | grep -o '\b[a-f0-9]\{10,\}\b'
+}
+
+function public:get_ios_devices {
+    instruments -s devices | grep -v "(Simulator)"
+}
+
+function public:postinstall {
+    yarn unlink
+    yarn link
+    yarn link chowchow
+    #public:androidx_rewrites
+}
+
+function public:link {
+    node node_modules/react-native/local-cli/cli.js link
+    public:pod:install
+}
+
+function public:lint {
+    eslint ./index.js ./src/ --ext .jsx,.js,.tsx,.ts --fix --max-warnings 0
+
+    # eslint ./index.js ./src/ --ext .jsx,.js,.tsx,.ts --fix
+
+    # tslint ./index.js ./src/**/* --fix
+}
+
+function public:tsc {
+    tsc
+}
+
+function public:test {
+    ./node_modules/.bin/jest
+}
+
+function public:test:ios {
+    echo 'Testing iOS'
+    xcodebuild \
+    -workspace ./ios/chowchow.xcworkspace \
+    -scheme MediaPeersIOSAPI \
+    -sdk iphonesimulator \
+    -UseModernBuildSystem=YES  \
+    -destination 'platform=iOS Simulator,name=iPhone X,OS=12.1' \
+    test | xcpretty --test --color
+}
+
+function public:test:android {
+    cd android
+    ./gradlew test
+    cd ../
+}
+
+function public:build:android {
+    cd android
+    ./gradlew build
+    cd ../
+}
+
+function public:pod:install {
+    pod install --project-directory=./ios/
+}
+
+function public:pod:reinstall {
+    cd ./ios
+    pod deintegrate
+    rm -rf ./Pods
+    pod install
+    cd ../
+}
+
+function public:run:android {
+    cd ./android && ./gradlew app:assembleDebug && ./gradlew installDebug
+}
+
+function public:run:ios {
+    react-native run-ios
+}
+
+function public:bundle:ios {
+    react-native bundle \
+        --entry-file='index.ts' \
+        --bundle-output="./ios/$APP_NAME/main.jsbundle" \
+        --sourcemap-output='ios-debug.bundle.map' \
+        --dev=false \
+        --platform='ios' \
+        --assets-dest='./ios'
+}
+
+function public:bundle:android {
+    react-native bundle  \
+        --entry-file='index.ts' \
+        --bundle-output='android/app/src/main/assets/index.android.bundle' \
+        --dev=false \
+        --platform='android' \
+        --assets-dest='android/app/src/main/res/'
+}
+
+function public:clean {
+    watchman watch-del-all
+    rm -rf node_modules
+    rm -rf $TMPDIR/haste-map-react-native-packager-*
+    rm -rf $TMPDIR/react-native-packager-cache-*
+    rm -rf $TMPDIR/metro-bundler-cache-*
+    xcodebuild -project ios/$APP_NAME.xcodeproj -configuration Release clean
+    xcodebuild -project ios/$APP_NAME.xcodeproj -configuration Debug clean
+    rm -rf ~/Library/Developer/Xcode/DerivedData
+    rm -f /ios/build
+
+    echo "Now run:"
+    echo "yarn install && yarn pod:reinstall"
+}
+
+function public:metro:clean {
+    rm -rf $TMPDIR/haste-map-react-native-packager-*
+    rm -rf $TMPDIR/react-native-packager-cache-*
+    rm -rf $TMPDIR/metro-bundler-cache-*
+}
+
+function public:launch:xcode {
+    open ./ios/chowchow.xcworkspace
+}
+
+function public:launch:studio {
+    open -a /Applications/Android\ Studio.app ./android
+}
+
+# function public:debug:android {
+#     bundle exec fastlane android dev
+# }
+
+function public:staging:ios {
+    # public:bundle:ios
+    bundle exec fastlane ios staging
+}
+
+function public:staging:android {
+    clear && printf '\e[3J' # proper clear
+    public:bundle:android
+    # public:fixAndroidDuplicateResources
+    bundle exec fastlane android staging
+}
+
+# function public:staging:both {
+#     set -e # make sure if one build fails the other does not complete
+#     public:staging:ios
+#     public:staging:android
+# }
+
+# function public:release:ios {
+#     public:bundle:ios
+#     bundle exec fastlane ios release
+# }
+
+function public:release:android {
+    public:bundle:android
+    public:fixAndroidDuplicateResources
+    bundle exec fastlane android release
+}
+
+function public:fixAndroidDuplicateResources {
+    rm -rf android/app/src/main/res/drawable-*
+}
+
+# function public:release:both {
+#     set -e # make sure if one build fails the other does not complete
+#     public:release:ios
+#     public:release:android
+# }
+
+# function public:upload:ios {
+#     bundle exec fastlane ios upload
+# }
+
+# function public:fastlane:update
+# {
+#     fastlane update_fastlane
+# }
+
+# function public:fastlane:plugins
+# {
+#     fastlane update_plugins
+# }
+
+function public:ios:certificates
+{
+    bundle exec fastlane ios certificates
+}
+
+# Sets the app icon for iOS
+# `task appicon ./my/image.png StagingIcon`
+# if second param is not inserted AssetName defaults to 'AppIcon'
+function public:appicon
+{
+    ASSET_NAME=${2:-AppIcon}
+
+    if [ -z "$1" ]
+      then
+        echo -e "\033[0;31mPlease supply a path to a 1024 x 1024 icon image\033[0m";
+        exit
+    fi
+
+    if [ ! -f $1 ]; then
+        echo -e "\033[0;31mFile not found!\033[0m"
+        exit
+    fi
+
+    echo -e "Creating image asset from $1 as '$ASSET_NAME' in XCode"
+    read -p "Are you sure? " -n 1 -r
+    echo    # (optional) move to a new line
+    if [[ $REPLY =~ ^[Yy]$ ]]
+    then
+        yo rn-toolbox:assets --icon $1 --iosAssetName $ASSET_NAME
+    fi
+}
+
+# These are hacks to make some of the react native modules AndroidX compatible
+function public:androidx_rewrites
+{
+    sh ./scripts/react-native.sh
+    sh ./scripts/react-native-firebase.sh
+    sh ./scripts/react-native-fast-image.sh
+    sh ./scripts/react-native-keychain.sh
+    sh ./scripts/react-native-navigation.sh
+    sh ./scripts/react-native-community-netinfo.sh
+    sh ./scripts/react-native-community-viewpager.sh
+    sh ./scripts/react-native-gesture-handler.sh
+}
+
+
+# ---------- Do NOT edit below --------------
+
+
+# DEFAULT public: list all possible commands
+function public:help {
+    echo "$0 <task> <args>"
+    echo "Tasks:"
+    compgen -A function | sed -En 's/public:(.*)/\1/p' | cat -n
+}
+
+# Log time of command
+TIMEFORMAT="Task completed in %3lR"
+time "public:${@:-help}" # make help default
+

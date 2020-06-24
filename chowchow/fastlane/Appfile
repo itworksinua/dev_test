@@ -1,0 +1,61 @@
+# For more information about the Appfile, see:
+# https://docs.fastlane.tools/advanced/#appfile
+
+# iOS Specific details
+# app_identifier("de.appdialog.jickilearning") # The bundle identifier of your app
+apple_id ENV["MEDIAPEERS_APPLE_ID"]
+itc_team_id "55622800" # iTunes Connect Team ID
+team_id "4C4P3Y5675" # Developer Portal Team ID
+
+
+
+# shared
+ENV["release_bundle_id"] = "com.mediapeers.mediastore"
+ENV["staging_bundle_id"] = "com.mediapeers.mediastore.staging"
+ENV["debug_bundle_id"] = "com.mediapeers.mediastore.dev"
+
+# ios
+ENV["ios_project_filename"] = "chowchow.xcodeproj"
+ENV["ios_workspace_filename"] = "chowchow.xcworkspace"
+ENV["ios_release_scheme"] = "chowchow-release"
+ENV["ios_staging_scheme"] = "chowchow-staging"
+ENV["ios_ipa_path"] = "./ios/builds/"
+ENV["ios_release_apk_name"] = "app-release.ipa"
+ENV["ios_staging_apk_name"] = "app-staging.ipa"
+
+# Use different bundle identifiers per lane
+for_platform :ios do
+    for_lane :debug do
+        app_identifier ENV["staging_bundle_id"]
+    end
+
+    for_lane :staging do
+        app_identifier ENV["staging_bundle_id"]
+    end
+
+    for_lane :release do
+        app_identifier ENV["release_bundle_id"]
+    end
+end
+
+# android
+ENV["android_gradle_path"] = "android/app/build.gradle"
+ENV["android_release_apk_path"] = "./android/app/build/outputs/apk/release/app-release.apk"
+ENV["android_staging_apk_path"] = "./android/app/build/outputs/apk/staging/app-staging.apk"
+ENV["android_debug_apk_path"] = "./android/app/build/outputs/apk/debug/app-debug.apk"
+
+# The repo where the android store and json are stored
+ENV['android_cryptex_repo'] = "git@github.com:mediafellows/mediapeers-android-keystore.git"
+
+# The google service api json
+ENV['android_service_account_json_path'] = "#{Dir.home}/.keystores/chowchow/MediapeersGoogleServiceAccount.json"
+
+# The java keystore and its aliases (keys)
+ENV["android_keystore_path"] = "#{Dir.home}/.keystores/chowchow/Mediapeers.jks"
+ENV['android_keystore_alias_staging_upload'] = "mediastore-staging-upload"
+ENV['android_keystore_alias_production_upload'] = "mediapeers-production-upload"
+
+# Keys for items in the remote store
+ENV['cryptex_service_account'] = "Mediapeers-Google-Service-Account"
+ENV['cryptex_keystore'] = "Mediapeers-Keystore"
+

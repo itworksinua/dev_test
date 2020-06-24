@@ -1,0 +1,423 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+
+##
+## IOS
+## ----------------
+##
+
+platform :ios do
+
+    before_all do |lane, options|
+        ENV["VERSION_NAME"] = load_json(json_path: "./package.json")["version"]
+    end
+
+    ##
+    ## The Staging Lane
+    ## -------------
+    ## Create a new Staging build, upload to testflight,
+    ## git tag it and push the tag
+    ##
+
+    desc "Submit a new Staging Build to Apple TestFlight"
+    lane :staging do
+        # ensure_git_status_clean
+        register_devices(devices_file: "./fastlane/devices.txt")
+        clean_build_artifacts
+        changelog_from_git_commits
+        increment_version_number(
+            version_number: ENV["VERSION_NAME"],
+            xcodeproj: "./ios/#{ENV["ios_project_filename"]}"
+        )
+        increment_build_number(xcodeproj: "./ios/#{ENV["ios_project_filename"]}")
+        # commit_version_bump(xcodeproj: "./ios/#{ENV["ios_project_filename"]}")
+        match(
+            type: "appstore",
+            # app_identifier: ENV["staging_bundle_id"],
+            force: true
+        )
+        gym(
+            scheme: ENV["ios_staging_scheme"],
+            workspace: "./ios/#{ENV["ios_workspace_filename"]}",
+            include_bitcode: false,
+            clean: true,
+            export_method: "app-store",
+            output_directory: ENV["ios_ipa_path"],
+            output_name: ENV["ios_staging_apk_name"],
+        )
+        add_git_tag
+        push_git_tags
+        pilot(
+            app_identifier: ENV["staging_bundle_id"],
+            # ipa:"#{ENV["ios_ipa_dir"]}#{ENV["ios_staging_apk_name"]}",
+            skip_waiting_for_build_processing: true
+        )
+        notify('Beta iOS ', 'Finished building beta:ios')
+    end
+
+    ##
+    ## The Release Lane
+    ## -------------
+    ## Create a new Release build, upload to testflight,
+    ## git tag it and push the tag
+    ##
+
+    desc "Submit a new Release Build to Apple TestFlight"
+    lane :release do
+        # ensure_git_status_clean
+        # app_icon(source:"fastlane/metadata/app_icon_stage.png")
+        register_devices(devices_file: "./fastlane/devices.txt")
+        clean_build_artifacts
+        changelog_from_git_commits
+        increment_version_number(
+            version_number: ENV["VERSION_NAME"],
+            xcodeproj: "./ios/#{ENV["ios_project_filename"]}"
+        )
+        increment_build_number(xcodeproj: "./ios/#{ENV["ios_project_filename"]}")
+        # commit_version_bump(xcodeproj: "./ios/#{ENV["ios_project_filename"]}")
+        match(
+            type: "appstore",
+            app_identifier: ENV["staging_bundle_id"],
+            force: true,
+        )
+        gym(
+            scheme: ENV["ios_release_scheme"],
+            workspace: "./ios/#{ENV["ios_workspace_filename"]}",
+            include_bitcode: false,
+            clean: true,
+            output_directory: ENV["ios_ipa_path"],
+            output_name: ENV["ios_release_apk_name"],
+        )
+        add_git_tag
+        push_git_tags
+
+        pilot(skip_waiting_for_build_processing: true)
+        notify('Beta iOS ', 'Finished building beta:ios')
+    end
+
+    desc "Helper function to get the Team Id and Developer Id"
+    lane :getTeamNames do
+        fastlane_require "spaceship"
+        clientTunes = Spaceship::Tunes.login("{brendon}", "{applePassword}")
+        client = Spaceship::Portal.login("{appleID}", "{applePassword}")
+
+        strClientTunes = ""
+        clientTunes.teams.each do |team|
+            UI.message "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})"
+            strClientTunes << "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})||"
+        end
+        File.write('ItunesTeamNames', strClientTunes[0..-3])
+
+        strDevPortal = ""
+        client.teams.each do |team|
+            UI.message "#{team['name']} (#{team['teamId']})"
+            strDevPortal << "#{team['name']} (#{team['teamId']})||"
+        end
+        File.write('DevTeamNames', strDevPortal[0..-3])
+
+      end
+
+    ##
+    ## Upload last build to Staging Testflight
+    ## -------------
+    ## Useful when retrying to upload
+    ##
+
+    desc "Deploy lastest IPA to Testflight internal"
+    lane :upload do
+        pilot(
+            app_identifier: ENV["staging_bundle_id"],
+            ipa:"#{ENV["ios_ipa_dir"]}#{ENV["ios_staging_apk_name"]}",
+        )
+    end
+
+
+    ##
+    ## Update devices and create new certificates
+    ##
+
+    desc "Updates devices & creates certificates"
+    lane :certificates do
+        register_devices(devices_file: "./fastlane/devices.txt")
+        match(
+            type: "development",
+            app_identifier: ENV["debug_bundle_id"],
+            force: true
+        )
+        match(
+            type: "development",
+            app_identifier: ENV["staging_bundle_id"],
+            force: true
+        )
+        match(
+            type: "appstore",
+            app_identifier: ENV["staging_bundle_id"],
+            force: true
+        )
+        match(
+            type: "development",
+            app_identifier: ENV["release_bundle_id"],
+            force: true
+        )
+        match(
+            type: "appstore",
+            app_identifier: ENV["release_bundle_id"],
+            force: true
+        )
+    end
+
+end
+
+##
+## Android
+## ----------------
+##
+
+platform :android do
+
+    before_all do |lane, options|
+        ENV["VERSION_NAME"] = load_json(json_path: "./package.json")["version"]
+    end
+
+    lane :getKeyStore do
+        cryptex(
+            # git_branch: "android",
+            git_url: "git@github.com:mediapeers/mediapeers-android-keystore.git",
+            type: "export",
+            out: "/Users/brendon/dev/keystores/Mediapeers-Tmp.jks",
+            key: "Mediapeers-Staging-Upload",
+        )
+    end
+
+    #     # env_out = cryptex(
+    #     #     git_url: "git@github.com:mediafellows/mediapeers-android-keystore.git",
+    #     #     type: "export_env",
+    #     #     key: "Mediapeers-Staging-Upload",
+    #     #     set_env: true #THIS one sets the values found directly into to ENV
+    #     #     #hash: {"my_key"=>true, "some_url"=>true} # only returned specific keys
+    #     # )
+
+    #     # puts env_out
+    #     puts ENV['hello']
+    # end
+
+    desc "Releases a build connected to staging to the alpha lane"
+    lane :push_credentials_to_repo do
+
+        cryptex(
+             git_url: ENV['android_cryptex_repo'],
+             type: "import",
+             in: "~/.keystores/chowchow/Mediapeers-tmp.jks",
+             key: ENV['cryptex_keystore']
+        )
+
+        cryptex(
+             git_url: ENV['android_cryptex_repo'],
+             type: "import",
+             in: "~/.keystores/chowchow/MediapeersGoogleServiceAccount-tmp.json",
+             key: ENV['cryptex_service_account']
+        )
+    end
+
+    lane :pull_credentials_from_repo do
+
+        cryptex(
+            # git_branch: "android",
+            git_url: ENV['android_cryptex_repo'],
+            type: "export",
+            out: ENV['android_service_account_json_path'],
+            key: ENV['cryptex_service_account']
+        )
+
+        cryptex(
+            # git_branch: "android",
+            git_url: ENV['android_cryptex_repo'],
+            type: "export",
+            out: ENV['android_keystore_path'],
+            key: ENV['cryptex_keystore']
+        )
+
+    end
+
+    ##
+    ## Releases a build connected to staging to the alpha lane
+    ##
+
+    desc "Releases a build connected to staging to the alpha lane"
+    lane :staging do
+
+        setStagingVars()
+
+        properties = {
+            "android.injected.signing.store.file" => ENV['android_keystore_path'],
+            "android.injected.signing.key.alias" => ENV['android_keystore_alias_staging_upload'],
+
+            "android.injected.signing.store.password" => "#{ENV['keystore_pass']}",
+            "android.injected.signing.key.password" => "#{ENV['staging_pass']}",
+        }
+
+        puts properties
+
+        changelog_from_git_commits
+        increment_version_code(
+            gradle_file_path: ENV["android_gradle_path"],
+        )
+        injectVersion
+        gradle(
+            task: "clean",
+            project_dir: 'android/',
+        )
+        gradle(
+            task: 'assemble',
+            build_type: 'staging',
+            project_dir: 'android/',
+            properties: properties
+        )
+        supply(
+            track: "alpha",
+            apk: ENV["android_staging_apk_path"],
+            json_key: ENV['android_service_account_json_path'],
+            package_name: ENV["staging_bundle_id"],
+            verbose: true
+        )
+        add_git_tag(
+            build_number: get_version_code(gradle_file_path: ENV["android_gradle_path"],)
+        )
+        push_git_tags
+
+        notify('Staging Android ', 'Finished building staging:android')
+    end
+
+
+    lane :upload_stage do
+        supply(
+            track: "alpha",
+            apk: ENV["android_staging_apk_path"],
+            json_key: ENV['android_service_account_json_path'],
+            package_name: ENV["staging_bundle_id"]
+        )
+    end
+
+    # supply --skip_upload_apk --skip_upload_images --skip_upload_screenshots --verbose --track "alpha" --apk "./android/app/build/outputs/apk/staging/app-staging.apk"
+
+    ##
+    ## Releases a build connected to production to the alpha lane
+    ##
+
+    desc "Deploy a new alpha version to the Google Play Store"
+    lane :release do
+        clean_build_artifacts
+        changelog_from_git_commits
+        increment_version_code(
+            gradle_file_path: ENV["android_gradle_path"],
+        )
+        injectVersion
+        gradle(
+            task: "clean",
+            project_dir: 'android/',
+        )
+        gradle(
+            task: 'assemble',
+            build_type: 'release',
+            project_dir: 'android/',
+        )
+        supply(
+            track: "alpha",
+            apk: ENV["android_release_apk_path"],
+            json_key: ENV['android_json_key'],
+            package_name: ENV["release_bundle_id"]
+        )
+        add_git_tag(
+            build_number: get_version_code(gradle_file_path: ENV["android_gradle_path"],)
+        )
+        push_git_tags
+
+        notify('Internal Android ', 'Finished building internal:android')
+    end
+
+
+    # Helper to inject the version number
+
+    lane :injectVersion do
+        path = "../#{ENV["android_gradle_path"]}"
+        # version = content["version"]
+
+        begin
+            foundVersionName = "false"
+            temp_file = Tempfile.new('fastlaneInjectVersionName')
+
+            File.open(path, 'r') do |file|
+                file.each_line do |line|
+                    if line.include? "versionName" and foundVersionName=="false"
+                        key = line[/.*versionName/]
+                        temp_file.puts "#{key} '#{ENV["VERSION_NAME"]}'"
+                    else
+                        temp_file.puts line
+                end
+            end
+            file.close
+            end
+            temp_file.rewind
+            temp_file.close
+            FileUtils.mv(temp_file.path, path)
+            temp_file.unlink
+        end
+    end
+end
+
+##
+## Helpers
+## ----------------
+##
+
+##
+## Method for notifications
+##
+def notify(title, message)
+    notification(
+        subtitle: title,
+        message: message,
+        app_icon: './fastlane/icons/fastlane.png',
+        content_image: './fastlane/icons/appstore.png',
+        sound: 'Submarine',
+    )
+end
+
+##
+## Gets a password from the mac keychain
+##
+def getPassword(account, where)
+    pass = `security -q find-generic-password -a #{account} -s #{where} -w`
+    pass.gsub("\n",'')
+end
+
+
+
+def setStagingVars()
+
+    if command?("security")
+        puts 'Command `security` found, you must be on a Mac'
+        ENV['keystore_pass'] = getPassword("mediapeers" , "Mediapeers-Keystore")
+        ENV['staging_pass'] = getPassword("mediapeers" , "MediaStore-Staging-Upload")
+    else
+        puts 'Command `security` not found, probably not on a Mac'
+        ENV['keystore_pass'] = 'fake'
+        ENV['staging_pass'] = 'fake'
+    end
+
+end
+
+def command?(command)
+    system("which #{ command} > /dev/null 2>&1")
+end
