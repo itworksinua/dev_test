@@ -73,7 +73,7 @@
     "react-native-touch-id": "~4.4.1",
     "react-native-vector-icons": "~6.2.0",
     "rn-viewpager": "~1.2.9",
-    "striptags": "^3.1.1",
+    "striptags": "^3.2.0",
     "tuco": "https://npm-proxy.fury.io/2ffhSH-6lfKMq1VxvHdSwEnWDzWU00J8c/mediapeers/tuco/-/1.0.1.tgz"
   },
   "devDependencies": {
