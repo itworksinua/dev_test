@@ -48,7 +48,7 @@
     "lodash": "~4.17.11",
     "mobx": "~5.9.0",
     "mobx-react": "~5.4.3",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "node-polyglot": "~2.3.0",
     "parametron": "https://github.com/mediafellows/parametron.git#cbc3dc58122febc0cfa16fec10a53e6c27c57c2f",
     "react": "16.8.3",
